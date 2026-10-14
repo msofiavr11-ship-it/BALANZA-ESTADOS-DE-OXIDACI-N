@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Balanza de Cargas por Átomos - Estados de Oxidación</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; font-size: 22px; }
+        .instructions { font-size: 14px; color: #555; margin-bottom: 20px; }
+        
+        /* Panel de entrada de fórmula */
+        .formula-setup {
+            background: #eef2f3;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .formula-setup input {
+            padding: 8px;
+            font-size: 16px;
+            width: 150px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 6px;
+            margin-left: 10px;
+        }
+        
+        /* Contenedor dinámico de átomos */
+        .atoms-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin: 25px 0;
+            flex-wrap: wrap;
+        }
+        .atom-box {
+            background: #fff;
+            border: 2px solid #34495e;
+            border-radius: 8px;
+            padding: 12px;
+            width: 90px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .atom-symbol {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+        .atom-box input {
+            width: 60px;
+            padding: 6px;
+            font-size: 16px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 4px;
+        }
+
+        /* Estilos de la Balanza Física */
+        .scale-container {
+            position: relative;
+            height: 200px;
+            margin: 30px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .base {
+            position: absolute;
+            bottom: 0;
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 40px solid #7f8c8d;
+        }
+        .beam {
+            position: absolute;
+            top: 50px;
+            width: 360px;
+            height: 6px;
+            background-color: #34495e;
+            border-radius: 3px;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .pan {
+            position: absolute;
+            top: 3px;
+            width: 80px;
+            height: 35px;
+            background: #bdc3c7;
+            border-bottom-left-radius: 40px;
+            border-bottom-right-radius: 40px;
+            border: 2px solid #95a5a6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .pan-left { left: 10px; }
+        .pan-right { right: 10px; }
+
+        /* Resultado */
+        .status {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .balanced { background-color: #d4edda; color: #155724; }
+        .unbalanced { background-color: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Balanza de Cargas por Átomos</h1>
+    <p class="instructions">Escribe la fórmula (ej: CO2, H2SO4, NaCl) y asigna el estado de oxidación a cada átomo para equilibrar la balanza.</p>
+
+    <!-- Configuración de la fórmula -->
+    <div class="formula-setup">
+        <label for="formulaInput"><strong>Fórmula química:</strong></label>
+        <input type="text" id="formulaInput" value="CO2" oninput="parseFormula()">
+    </div>
+
+    <!-- Casillas flotantes sobre cada átomo -->
+    <div id="atomsInputsContainer" class="atoms-container">
+        <!-- Generado dinámicamente por JavaScript -->
+    </div>
+
+    <!-- Dibujo de la Balanza -->
+    <div class="scale-container">
+        <div class="beam" id="beam">
+            <div class="pan pan-left" id="panLeftText">0</div>
+            <div class="pan pan-right" id="panRightText">0</div>
+        </div>
+        <div class="base"></div>
+    </div>
+
+    <div id="statusBox" class="status balanced">¡Balanza en equilibrio (Suma = 0)!</div>
+</div>
+
+<script>
+    // Estructura simple para descomponer fórmulas básicas introducidas
+    function parseFormula() {
+        let formula = document.getElementById('formulaInput').value.trim();
+        let container = document.getElementById('atomsInputsContainer');
+        container.innerHTML = '';
+
+        // Expresión regular para separar elementos y sus subíndices (ej: H2, SO4, Na, etc.)
+        let regex = /([A-Z][a-z]*)(\d*)/g;
+        let match;
+        let elements = [];
+
+        while ((match = regex.exec(formula)) !== null) {
+            let symbol = match[1];
+            let count = match[2] ? parseInt(match[2]) : 1;
+            // Expandimos los átomos individuales para que cada uno tenga su casilla si se desea, 
+            // o agrupados por elemento multiplicados por su subíndice. 
+            // Para simplificar la interfaz de noveno, creamos una casilla por cada tipo de elemento indicando su cantidad.
+            elements.push({ symbol: symbol, count: count });
+        }
+
+        if (elements.length === 0) {
+            container.innerHTML = '<p style="color:red; font-size:14px;">Escribe una fórmula válida (ej. CO2)</p>';
+            return;
+        }
+
+        elements.forEach((el, index) => {
+            let box = document.createElement('div');
+            box.className = 'atom-box';
+            box.innerHTML = `
+                <div class="atom-symbol">${el.symbol}<sub>${el.count > 1 ? el.count : ''}</sub></div>
+                <input type="number" id="ox_${index}" data-count="${el.count}" value="0" oninput="calculateBalance()" placeholder="+/-N">
+            `;
+            container.appendChild(box);
+        });
+
+        calculateBalance();
+    }
+
+    function calculateBalance() {
+        let formula = document.getElementById('formulaInput').value.trim();
+        let regex = /([A-Z][a-z]*)(\d*)/g;
+        let match;
+        let totalSum = 0;
+        let leftSum = 0;  // Positivos o carga acumulada izquierda
+        let rightSum = 0; // Negativos o carga acumulada derecha (o total algebraico)
+
+        let index = 0;
+        while ((match = regex.exec(formula)) !== null) {
+            let inputField = document.getElementById(`ox_${index}`);
+            if (inputField) {
+                let oxidationState = parseFloat(inputField.value) || 0;
+                let count = parseInt(inputField.getAttribute('data-count')) || 1;
+                let subTotal = oxidationState * count;
+                
+                totalSum += subTotal;
+
+                // Separamos visualmente para los platos de la balanza
+                if (subTotal >= 0) {
+                    leftSum += subTotal;
+                } else {
+                    rightSum += Math.abs(subTotal);
+                }
+            }
+            index++;
+        }
+
+        document.getElementById('panLeftText').innerText = "+" + leftSum;
+        document.getElementById('panRightText').innerText = "-" + rightSum;
+
+        let beam = document.getElementById('beam');
+        let statusBox = document.getElementById('statusBox');
+
+        // Inclinación basada en la diferencia de la suma total respecto a 0
+        let tilt = totalSum * 4; 
+        if (tilt > 25) tilt = 25;
+        if (tilt < -25) tilt = -25;
+        beam.style.transform = `rotate(${tilt}deg)`;
+
+        if (totalSum === 0) {
+            statusBox.className = "status balanced";
+            statusBox.innerText = "¡Perfecto! La suma total de cargas es 0 y la balanza está en equilibrio.";
+        } else {
+            statusBox.className = "status unbalanced";
+            statusBox.innerText = `¡Desequilibrado! La suma total es ${totalSum > 0 ? '+' + totalSum : totalSum}. Debe dar 0.`;
+        }
+    }
+
+    // Inicializar al cargar
+    window.onload = function() {
+        parseFormula();
+    };
+</script>
+
+</body>
+</html>
